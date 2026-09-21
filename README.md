@@ -244,7 +244,6 @@ SignVisionAI/
 
 ### Machine Learning
 
-* Scikit-learn
 * Random Forest
 * SVM
 * KNN
