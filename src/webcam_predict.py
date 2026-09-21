@@ -2,9 +2,11 @@
 
 import cv2
 import numpy as np
+import pandas as pd
 import joblib
 import mediapipe as mp
 
+from collections import deque, Counter
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
@@ -26,6 +28,8 @@ print("Loading trained model...")
 
 model = joblib.load(MODEL_PATH)
 
+FEATURE_COLUMNS = [str(i) for i in range(63)]
+
 print("Model loaded successfully.")
 print("Classes:", model.classes_)
 
@@ -40,6 +44,7 @@ base_options = python.BaseOptions(
 
 options = vision.HandLandmarkerOptions(
     base_options=base_options,
+    running_mode=vision.RunningMode.IMAGE,
     num_hands=1
 )
 
@@ -100,6 +105,9 @@ print("Press 'q' to quit.")
 # 6. MAIN LOOP
 # ============================================================
 
+prediction_history = deque(maxlen=7)
+stable_prediction = "No hand detected"
+
 while True:
 
     success, frame = cap.read()
@@ -112,7 +120,7 @@ while True:
     frame = cv2.flip(frame, 1)
 
     # OpenCV uses BGR
-    # MediaPipe expects an RGB image
+    # MediaPipe expects RGB
     rgb_frame = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2RGB
@@ -132,15 +140,31 @@ while True:
 
     prediction = "No hand detected"
 
+    # ========================================================
+    # HAND DETECTED
+    # ========================================================
+
     if landmarks is not None:
 
         # Model expects:
         # (number_of_samples, number_of_features)
-
-        features = landmarks.reshape(1, -1)
+        features = pd.DataFrame(
+            [landmarks],
+            columns=FEATURE_COLUMNS
+        )
 
         # Predict letter
-        prediction = model.predict(features)[0]
+        current_prediction = model.predict(features)[0]
+
+        # Store recent predictions
+        prediction_history.append(current_prediction)
+
+        # Majority vote for stable prediction
+        stable_prediction = Counter(
+            prediction_history
+        ).most_common(1)[0][0]
+
+        prediction = stable_prediction
 
         # Draw hand landmarks
         for hand in detection_result.hand_landmarks:
@@ -163,6 +187,15 @@ while True:
                     -1
                 )
 
+    # ========================================================
+    # NO HAND DETECTED
+    # ========================================================
+
+    else:
+
+        prediction_history.clear()
+        stable_prediction = "No hand detected"
+        prediction = stable_prediction
 
     # ========================================================
     # DISPLAY PREDICTION
@@ -191,11 +224,9 @@ while True:
         frame
     )
 
-
     # Quit
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
-
 
 # ============================================================
 # 7. CLEAN UP
