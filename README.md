@@ -55,25 +55,30 @@ ASL Letter Prediction
 
 ## Dataset
 
-The project uses an ASL alphabet image dataset.
+The project uses the **American Sign Language (ASL) Alphabet Dataset** from Kaggle.
 
-After processing the images with MediaPipe, the extracted hand landmarks are stored in a CSV file.
+The dataset contains images representing ASL alphabet signs. MediaPipe Hand Landmarker is used to extract 21 hand landmarks from the images, resulting in 63 numerical features for machine learning.
+
+**Source:**
+[Kaggle – ASL Alphabet Dataset](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)
 
 ### Dataset Statistics
 
-| Property           |          Value |
-| ------------------ | -------------: |
-| Total samples      |         10,615 |
-| Features           |             63 |
-| Classes            |             28 |
-| Alphabet classes   |            A–Z |
-| Additional classes | `del`, `space` |
+| Property                |           Value |
+| ----------------------- | --------------: |
+| Total processed samples |          10,615 |
+| Features                |              63 |
+| Classes                 |              28 |
+| Labels                  | A–Z, del, space |
 
-The extracted dataset is available as:
+The original image dataset was processed into hand-landmark features and stored in:
 
 ```text
 data/asl_hand_landmarks.csv
 ```
+
+The processed CSV contains the extracted landmark coordinates and corresponding class labels used for model training and evaluation.
+
 
 ### Feature Representation
 
