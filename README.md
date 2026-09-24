@@ -1,206 +1,8 @@
 # SignVisionAI
 
-**SignVisionAI** is a computer vision and machine learning project for recognizing **American Sign Language (ASL) alphabet signs** from hand images and webcam input.
+SignVisionAI is a sign-language recognition project that uses **MediaPipe hand landmarks** and **scikit-learn machine learning models** to recognize ASL classes from hand-landmark features.
 
-The system uses **MediaPipe Hand Landmarker** to extract hand landmarks and machine learning models to classify the extracted hand features into ASL alphabet classes.
-
----
-
-## Project Objective
-
-The main objective of SignVisionAI is to develop a system that can recognize static ASL hand signs and predict the corresponding alphabet letter.
-
-The current project focuses on **static ASL alphabet recognition** as the first stage toward a broader sign language communication system.
-
----
-
-## System Overview
-
-The overall pipeline is:
-
-```text
-ASL Image / Webcam
-        ↓
-MediaPipe Hand Landmarker
-        ↓
-21 Hand Landmarks
-        ↓
-63 Numerical Features
-        ↓
-Wrist-relative Normalization
-        ↓
-Machine Learning Model
-        ↓
-ASL Letter Prediction
-```
-
----
-
-## Key Features
-
-* ASL alphabet recognition
-* Hand detection using MediaPipe
-* Extraction of 21 hand landmarks
-* 63 numerical hand-coordinate features
-* Wrist-relative landmark normalization
-* Multiple machine learning models for comparison
-* MLP-based final classification model
-* Model evaluation using accuracy and F1-score
-* Stratified 5-fold cross-validation
-* Saved trained model using Joblib
-* Initial real-time webcam prediction
-* Prediction smoothing using recent-frame majority voting
-
----
-
-## Dataset
-
-The project uses the **American Sign Language (ASL) Alphabet Dataset** from Kaggle.
-
-The dataset contains images representing ASL alphabet signs. MediaPipe Hand Landmarker is used to extract 21 hand landmarks from the images, resulting in 63 numerical features for machine learning.
-
-**Source:**
-[Kaggle – ASL Alphabet Dataset](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)
-
-### Dataset Statistics
-
-| Property                |           Value |
-| ----------------------- | --------------: |
-| Total processed samples |          10,615 |
-| Features                |              63 |
-| Classes                 |              28 |
-| Labels                  | A–Z, del, space |
-
-The original image dataset was processed into hand-landmark features and stored in:
-
-```text
-data/asl_hand_landmarks.csv
-```
-
-The processed CSV contains the extracted landmark coordinates and corresponding class labels used for model training and evaluation.
-
-
-### Feature Representation
-
-MediaPipe detects **21 hand landmarks**.
-
-Each landmark contains:
-
-* X coordinate
-* Y coordinate
-* Z coordinate
-
-Therefore:
-
-```text
-21 landmarks × 3 coordinates = 63 features
-```
-
-The coordinates are normalized relative to the wrist to reduce the effect of the hand's position in the image.
-
----
-
-## Machine Learning Models
-
-Several classification algorithms were evaluated using the extracted landmark features:
-
-1. Random Forest
-2. Support Vector Machine (SVM)
-3. K-Nearest Neighbors (KNN)
-4. Logistic Regression
-5. Multi-Layer Perceptron (MLP)
-
-### Test Results
-
-| Model               | Test Accuracy |
-| ------------------- | ------------: |
-| Random Forest       |        97.13% |
-| SVM                 |        95.90% |
-| KNN                 |        94.77% |
-| Logistic Regression |        97.60% |
-| **MLP**             |    **97.69%** |
-
-Based on the experiments, **MLP achieved the highest test accuracy** among the evaluated models.
-
----
-
-## Final Model
-
-The final classification pipeline uses:
-
-```text
-StandardScaler
-      ↓
-MLPClassifier
-      ↓
-Hidden Layer: 128 neurons
-      ↓
-Hidden Layer: 64 neurons
-      ↓
-28-Class Prediction
-```
-
-The trained model is saved as:
-
-```text
-models/sign_language_mlp.pkl
-```
-
-Joblib is used to save and load the trained model.
-
----
-
-## Cross-Validation
-
-To evaluate the consistency of the model across different data splits, **Stratified 5-Fold Cross-Validation** was performed.
-
-### MLP Cross-Validation Results
-
-* Mean Accuracy: **97.62%**
-* Standard Deviation: **0.41%**
-* Mean Macro F1: **97.33%**
-
-The cross-validation results provide an additional evaluation beyond the single held-out test set.
-
-> **Note:** The 97.69% result represents the offline held-out test accuracy on the extracted landmark dataset. It should not be interpreted as the final real-world webcam accuracy. Real-world performance requires separate testing under webcam conditions.
-
----
-
-## Real-Time Webcam Prediction
-
-The project includes an initial webcam prediction component using:
-
-* OpenCV
-* MediaPipe
-* NumPy
-* Joblib
-* Trained MLP model
-
-The webcam pipeline is:
-
-```text
-Webcam Frame
-     ↓
-OpenCV
-     ↓
-MediaPipe Hand Detection
-     ↓
-21 Hand Landmarks
-     ↓
-Landmark Normalization
-     ↓
-63 Features
-     ↓
-Trained MLP
-     ↓
-Predicted ASL Letter
-```
-
-To reduce frame-to-frame prediction fluctuations, the system maintains recent predictions and uses **majority voting** to produce a more stable displayed prediction.
-
-The webcam implementation is currently being validated as part of the end-to-end real-time system.
-
----
+The current repository contains the feature-extraction notebook, prepared landmark dataset, machine-learning training scripts, model comparison results, evaluation results, cross-validation results, and the final trained MLP model.
 
 ## Project Structure
 
@@ -211,38 +13,139 @@ SignVisionAI/
 │   └── asl_hand_landmarks.csv
 │
 ├── models/
-│   ├── sign_language_rf.pkl
 │   └── sign_language_mlp.pkl
 │
 ├── notebooks/
-│   └── feature_extraction.ipynb
+│   └── 01_feature_extraction (1).ipynb
 │
-├── src/
-│   ├── train_model.py
-│   ├── compare_models.py
-│   ├── cross_validate.py
-│   ├── final_train.py
-│   ├── evaluate_model.py
-│   └── webcam_predict.py
+├── results/
+│   ├── cross_validation_results.csv
+│   ├── mlp_confusion_matrix.png
+│   └── model_comparison.csv
 │
-├── requirements.txt
-└── README.md
+└── src/
+    ├── train_model.py
+    ├── compare_models.py
+    ├── cross_validate.py
+    ├── evaluate_model.py
+    └── final_train.py
 ```
 
----
+## Requirements
 
-## Technologies Used
+* Python 3.10 or newer
+* Jupyter Notebook (for feature extraction)
+* MediaPipe
+* Pandas
+* Scikit-learn
+* Joblib
+* Matplotlib
 
-### Programming Language
+Create and activate a virtual environment:
 
-* Python
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-### Computer Vision
+Install the required packages:
 
-* OpenCV
-* MediaPipe Hand Landmarker
+```bash
+python -m pip install --upgrade pip
+python -m pip install pandas scikit-learn joblib matplotlib jupyter mediapipe
+```
 
-### Machine Learning
+On Windows:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+## Dataset
+
+The main training dataset is:
+
+```text
+data/asl_hand_landmarks.csv
+```
+
+The dataset contains:
+
+* **10,615 samples**
+* **63 hand-landmark features**
+* **28 classes**
+* No missing values
+* No duplicate rows
+
+The 63 features represent **21 MediaPipe hand landmarks**, with three coordinates for each landmark:
+
+```text
+x, y, z
+```
+
+The dataset contains the following classes:
+
+```text
+A-Z
+del
+space
+```
+
+The training scripts expect the feature columns followed by a target column named:
+
+```text
+label
+```
+
+## Feature Extraction
+
+The feature-extraction notebook uses **MediaPipe Hand Landmarker** to detect a hand and extract 21 hand landmarks.
+
+The landmarks are converted into 63 numerical features and stored in the CSV dataset.
+
+To regenerate the feature dataset, open the notebook:
+
+```bash
+jupyter notebook "notebooks/01_feature_extraction (1).ipynb"
+```
+
+The generated feature CSV should be saved as:
+
+```text
+data/asl_hand_landmarks.csv
+```
+
+The original ASL image dataset is kept separately and is not included in this repository.
+
+## Machine Learning Workflow
+
+The project follows this workflow:
+
+```text
+ASL Images
+    ↓
+MediaPipe Hand Landmark Extraction
+    ↓
+63 Landmark Features
+    ↓
+asl_hand_landmarks.csv
+    ↓
+Model Training
+    ↓
+Model Comparison
+    ↓
+Evaluation
+    ↓
+5-Fold Cross-Validation
+    ↓
+Final MLP Model
+    ↓
+sign_language_mlp.pkl
+```
+
+## Model Comparison
+
+Five machine-learning classifiers were compared using an **80/20 stratified train-test split**:
 
 * Random Forest
 * SVM
@@ -250,212 +153,196 @@ SignVisionAI/
 * Logistic Regression
 * MLP
 
-### Data Processing
-
-* NumPy
-* Pandas
-
-### Model Persistence
-
-* Joblib
-
----
-
-## Environment
-
-The project was developed and tested using Python 3.13.
-
-Main packages include:
-
-```text
-Python 3.13
-OpenCV
-MediaPipe
-NumPy
-Pandas
-Scikit-learn
-Joblib
-```
-
----
-
-## Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/Pirushalini/SignVisionAI.git
-cd SignVisionAI
-```
-
-Create a virtual environment:
-
-```bash
-python3.13 -m venv .venv
-```
-
-Activate the environment on macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Install the required packages:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Training the Model
-
-To train the Random Forest model:
-
-```bash
-python src/train_model.py
-```
-
-To compare the machine learning models:
+Run:
 
 ```bash
 python src/compare_models.py
 ```
 
-To perform cross-validation:
+The results are saved to:
+
+```text
+results/model_comparison.csv
+```
+
+### Comparison Results
+
+| Model               |   Accuracy |
+| ------------------- | ---------: |
+| Random Forest       |     97.13% |
+| SVM                 |     95.90% |
+| KNN                 |     94.77% |
+| Logistic Regression |     97.60% |
+| MLP                 | **97.69%** |
+
+The MLP achieved **97.69% accuracy** on the held-out test set.
+
+## Five-Fold Cross-Validation
+
+To evaluate model performance across multiple train-test splits, stratified **5-fold cross-validation** was performed for:
+
+* Random Forest
+* Logistic Regression
+* MLP
+
+Run:
 
 ```bash
 python src/cross_validate.py
 ```
 
-To train the final MLP model:
+Results are saved to:
 
-```bash
-python src/final_train.py
+```text
+results/cross_validation_results.csv
 ```
 
----
+The MLP achieved:
 
-## Model Evaluation
+```text
+Mean Accuracy: 97.62%
+Accuracy Std:  ±0.41%
+Mean Macro F1: 97.33%
+```
 
-The project includes evaluation scripts for checking model performance using:
+## MLP Evaluation
+
+The MLP model was evaluated using:
 
 * Accuracy
 * Precision
 * Recall
 * F1-score
-* Classification reports
 * Confusion matrix
-* Cross-validation
 
-Example:
+Run:
 
 ```bash
 python src/evaluate_model.py
 ```
 
----
-
-## Webcam Prediction
-
-The initial webcam prediction script can be executed using:
-
-```bash
-python src/webcam_predict.py
-```
-
-The webcam captures frames, detects the hand using MediaPipe, extracts and normalizes the landmarks, and passes the resulting features to the trained MLP model.
-
----
-
-## Current Project Status
-
-### Completed
-
-* [x] ASL dataset investigation
-* [x] Hand landmark extraction
-* [x] 21-landmark representation
-* [x] 63-feature generation
-* [x] Wrist-relative normalization
-* [x] Landmark CSV dataset creation
-* [x] Multiple model training
-* [x] Model comparison
-* [x] Model evaluation
-* [x] Confusion matrix analysis
-* [x] Stratified 5-fold cross-validation
-* [x] Final MLP model training
-* [x] Trained model saving
-* [x] Initial webcam prediction implementation
-
-### In Progress
-
-* [ ] End-to-end real-time webcam validation
-* [ ] Real-world testing with different users and environments
-* [ ] Performance analysis under different lighting and backgrounds
-* [ ] Further improvement of difficult/ambiguous classes
-
----
-
-## Future Scope
-
-The current system focuses on **static ASL alphabet recognition**.
-
-Future development can extend the system toward:
+The confusion matrix is saved to:
 
 ```text
-ASL Alphabet
-     ↓
-Static Word Recognition
-     ↓
-Dynamic Sign Recognition
-     ↓
-Sentence-Level Communication
+results/mlp_confusion_matrix.png
 ```
 
-For dynamic sign recognition, temporal machine learning models such as **LSTM or GRU** can be explored because they can process sequences of hand movements over time.
+## Final Model
 
-Other possible improvements include:
+The final model is an MLP pipeline containing:
 
-* Larger and more diverse datasets
-* Multi-user evaluation
-* Improved real-time interface
-* Confidence-based predictions
-* Better handling of similar hand signs
-* Word and phrase recognition
-* Dynamic gesture recognition
-* Text and speech output
+```text
+StandardScaler
+      ↓
+MLPClassifier
+      ↓
+Hidden Layers: (128, 64)
+```
 
----
+The model is trained using the complete available feature dataset.
 
-## Limitations
+Run:
 
-The current version has several limitations:
+```bash
+python src/final_train.py
+```
 
-* The main focus is static ASL alphabet recognition.
-* The offline test dataset may not fully represent real-world webcam conditions.
-* Lighting, background, camera quality, and hand orientation can affect detection.
-* Some visually similar signs can be difficult to classify.
-* Real-world webcam accuracy requires further evaluation.
-* Full word and sentence-level sign language communication is not yet implemented.
+The final trained pipeline is saved as:
 
----
+```text
+models/sign_language_mlp.pkl
+```
 
-## Team Project
+## Loading the Final Model
 
-**Project:** SignVisionAI
-**Domain:** Computer Vision & Machine Learning
-**Application:** American Sign Language Recognition
+The saved model can be loaded using Joblib:
 
-The project is being developed as a team-based project with separate responsibilities covering:
+```python
+import joblib
 
-* Existing hand detection / system development
-* Dataset and feature extraction
-* Machine learning model training and evaluation
+model = joblib.load("models/sign_language_mlp.pkl")
 
----
+prediction = model.predict([features_63])
 
-## Conclusion
+print(prediction[0])
+```
 
-SignVisionAI establishes a machine-learning pipeline for recognizing static ASL alphabet signs using hand landmarks rather than raw image pixels.
+`features_63` must contain the same **63 hand-landmark features in the same order** as the training dataset.
 
-By combining **MediaPipe Hand Landmarker**, landmark normalization, multiple machine-learning classifiers, model evaluation, cross-validation, and webcam inference, the project provides a foundation for developing a more advanced sign language communication system in future stages.
+## Baseline Random Forest
+
+The Random Forest baseline can be trained using:
+
+```bash
+python src/train_model.py
+```
+
+The script creates:
+
+```text
+models/sign_language_rf.pkl
+```
+
+The Random Forest model was used as a baseline for model comparison. The generated `.pkl` file is **not included in the repository because of its large file size**.
+
+## Output Files
+
+The project produces the following outputs:
+
+```text
+results/
+├── model_comparison.csv
+├── cross_validation_results.csv
+└── mlp_confusion_matrix.png
+```
+
+Final model:
+
+```text
+models/sign_language_mlp.pkl
+```
+
+## Current Status
+
+Completed:
+
+* [x] ASL landmark feature dataset preparation
+* [x] MediaPipe landmark feature extraction
+* [x] Random Forest training
+* [x] SVM training
+* [x] KNN training
+* [x] Logistic Regression training
+* [x] MLP training
+* [x] Model comparison
+* [x] Classification evaluation
+* [x] Confusion matrix
+* [x] Five-fold cross-validation
+* [x] Final MLP model training
+* [x] Model saving for integration
+
+Not yet implemented:
+
+* [ ] Live webcam inference application
+* [ ] Real-time prediction interface
+* [ ] Integration with the final application
+
+## Important Notes
+
+* Run all Python commands from the **repository root**.
+* The training scripts expect `data/asl_hand_landmarks.csv`.
+* The final MLP model expects 63 hand-landmark features in the same order used during training.
+* The original ASL image dataset is maintained separately and is not included in the repository.
+* The Random Forest `.pkl` model is not stored in the repository because of its large file size.
+* Models saved with Joblib should only be loaded from trusted sources and with compatible Python and scikit-learn versions.
+
+## Team Handover
+
+The ML training and evaluation pipeline is ready for integration.
+
+The final model is available at:
+
+```text
+models/sign_language_mlp.pkl
+```
+
+The integration/realtime component can use this model with the same 63-feature MediaPipe landmark format used during training.
