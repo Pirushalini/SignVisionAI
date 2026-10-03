@@ -1,0 +1,46 @@
+{
+    "model_name": "Support Vector Machine (SVM)",
+    "classes": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z"
+    ],
+    "num_classes": 26,
+    "feature_count": 63,
+    "best_hyperparameters": "{'classifier__C': 50.0, 'classifier__gamma': 'scale', 'classifier__kernel': 'rbf'}",
+    "test_metrics": {
+        "accuracy": 0.9581005586592178,
+        "macro_precision": 0.9584544094338093,
+        "macro_recall": 0.954174297924298,
+        "macro_f1": 0.954087518955506,
+        "weighted_f1": 0.9567576251702047,
+        "cv_macro_f1": 0.9591795561727252
+    },
+    "pipeline_steps": [
+        "scaler",
+        "classifier"
+    ]
+}

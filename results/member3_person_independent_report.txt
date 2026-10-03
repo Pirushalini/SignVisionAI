@@ -1,0 +1,256 @@
+Member 3 - Person-Independent SLS Evaluation
+============================================================
+
+Dataset
+Total successful landmark samples: 1787
+Members: Member_1, Member_2, Member_3, Member_4
+Evaluation: Leave-one-member-out
+
+Normalization
+1. Wrist landmark moved to origin
+2. Maximum wrist distance used for hand-size normalization
+3. StandardScaler fitted only on training members
+
+SVM Configuration
+Kernel: RBF
+C: 100
+Gamma: 0.01
+Class weight: balanced
+
+Fold Results
+held_out_member  train_samples  test_samples  test_classes  accuracy  macro_precision  macro_recall  macro_f1  weighted_f1
+       Member_1           1287           500            26  0.566000         0.555838      0.579251  0.550730     0.538562
+       Member_2           1342           445            25  0.483146         0.380063      0.433000  0.372034     0.413829
+       Member_3           1428           359            26  0.384401         0.321131      0.394193  0.308025     0.314205
+       Member_4           1304           483            26  0.124224         0.133675      0.127961  0.109379     0.109477
+
+Four-Fold Average
+Accuracy: 0.389443
+Macro Precision: 0.347677
+Macro Recall: 0.383601
+Macro F1: 0.335042
+Weighted F1: 0.344018
+
+Overall Person-Independent Results
+Accuracy: 0.389480
+Macro Precision: 0.394469
+Macro Recall: 0.388514
+Macro F1: 0.386411
+Weighted F1: 0.387634
+
+Classification Report
+              precision    recall  f1-score   support
+
+           A       0.82      0.69      0.75        67
+           B       0.64      0.54      0.59        67
+           C       0.67      0.57      0.62        70
+           D       0.25      0.17      0.20        54
+           E       0.71      0.86      0.78        58
+           F       0.00      0.00      0.00        45
+           G       0.36      0.25      0.29        40
+           H       0.56      0.56      0.56        71
+           I       0.00      0.00      0.00        80
+           J       0.36      0.54      0.43        80
+           K       0.00      0.00      0.00        49
+           L       0.53      0.53      0.53        79
+           M       0.12      0.10      0.11        79
+           N       0.45      0.45      0.45        80
+           O       0.30      0.21      0.25        80
+           P       0.37      0.22      0.28        72
+           Q       0.28      0.45      0.35        60
+           R       0.29      0.25      0.27        80
+           S       0.06      0.07      0.07        80
+           T       0.24      0.25      0.25        80
+           U       0.30      0.29      0.29        80
+           V       0.46      0.44      0.45        80
+           W       0.81      0.69      0.75        62
+           X       0.59      0.78      0.67        68
+           Y       0.68      0.66      0.67        73
+           Z       0.41      0.53      0.46        53
+
+    accuracy                           0.39      1787
+   macro avg       0.39      0.39      0.39      1787
+weighted avg       0.40      0.39      0.39      1787
+
+Misclassification Pairs
+true_label predicted_label  count
+         U               J     24
+         K               F     24
+         F               Q     23
+         T               M     23
+         M               H     20
+         S               J     20
+         R               L     20
+         I               S     20
+         I               U     20
+         V               J     19
+         B               Q     18
+         S               I     18
+         S               M     17
+         L               T     17
+         H               Y     17
+         C               D     16
+         T               F     16
+         P               F     16
+         M               T     16
+         D               C     15
+         U               S     15
+         Q               F     15
+         S               U     14
+         D               X     14
+         P               Z     14
+         F               K     14
+         R               N     14
+         O               J     13
+         O               I     13
+         N               S     13
+         O               T     13
+         Q               B     13
+         D               P     12
+         Y               E     12
+         Z               I     12
+         P               D     11
+         M               S     11
+         R               O     10
+         I               V     10
+         I               R     10
+         A               F     10
+         P               X      9
+         G               X      9
+         L               N      9
+         W               H      9
+         O               V      9
+         J               U      9
+         C               Q      9
+         N               R      8
+         N               T      8
+         I               F      8
+         W               M      7
+         K               Q      7
+         Y               N      7
+         I               Z      7
+         L               V      7
+         H               W      7
+         T               R      6
+         V               O      6
+         M               Y      6
+         P               K      6
+         U               I      6
+         K               Z      6
+         O               L      6
+         G               Z      6
+         J               S      6
+         J               R      6
+         J               N      6
+         M               R      6
+         A               I      6
+         T               L      5
+         O               S      5
+         B               Z      5
+         N               O      5
+         R               I      5
+         J               O      5
+         V               S      5
+         U               V      5
+         X               A      5
+         N               L      4
+         T               U      4
+         B               C      4
+         F               S      4
+         V               G      4
+         M               G      4
+         V               U      4
+         L               R      4
+         K               M      4
+         X               G      4
+         C               X      4
+         Z               Q      4
+         T               O      3
+         F               P      3
+         E               F      3
+         S               O      3
+         R               M      3
+         Q               K      3
+         A               R      3
+         U               O      3
+         W               B      3
+         Z               K      3
+         I               G      3
+         G               S      3
+         J               V      3
+         X               Q      3
+         N               V      3
+         R               T      3
+         G               P      3
+         G               E      3
+         T               N      2
+         R               S      2
+         Y               A      2
+         Y               H      2
+         V               E      2
+         U               T      2
+         Z               P      2
+         B               S      2
+         H               M      2
+         O               M      2
+         E               P      2
+         D               Q      2
+         K               B      2
+         G               O      2
+         H               R      2
+         H               B      2
+         I               E      2
+         M               O      2
+         M               F      2
+         G               Q      2
+         M               V      2
+         N               G      2
+         K               S      2
+         K               N      2
+         X               C      1
+         R               P      1
+         K               P      1
+         V               R      1
+         K               V      1
+         X               S      1
+         X               O      1
+         M               L      1
+         J               T      1
+         A               N      1
+         J               L      1
+         G               R      1
+         Y               R      1
+         Y               W      1
+         Z               A      1
+         A               K      1
+         Z               R      1
+         Z               W      1
+         V               Q      1
+         M               N      1
+         V               L      1
+         E               G      1
+         R               V      1
+         R               Z      1
+         S               F      1
+         D               Z      1
+         Q               Z      1
+         C               P      1
+         S               N      1
+         Q               P      1
+         H               N      1
+         B               T      1
+         T               J      1
+         E               K      1
+         V               K      1
+         E               W      1
+         O               U      1
+         U               E      1
+         F               T      1
+         B               H      1
+         O               A      1
+         U               P      1
+         N               U      1
+         G               F      1
+         V               F      1
+         D               A      1
+         Z               X      1
