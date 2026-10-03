@@ -1,0 +1,46 @@
+{
+    "model_name": "Multi-Layer Perceptron (MLP)",
+    "classes": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z"
+    ],
+    "num_classes": 26,
+    "feature_count": 63,
+    "best_hyperparameters": "Default",
+    "test_metrics": {
+        "accuracy": 0.9821339950372209,
+        "macro_precision": 0.9793072495643962,
+        "macro_recall": 0.9784855087723294,
+        "macro_f1": 0.9785929152352492,
+        "weighted_f1": 0.9821382250566517,
+        "cv_macro_f1": null
+    },
+    "pipeline_steps": [
+        "scaler",
+        "classifier"
+    ]
+}
