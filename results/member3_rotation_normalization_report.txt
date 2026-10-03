@@ -1,0 +1,39 @@
+Member 3 - Rotation-Normalized Person-Independent Evaluation
+=================================================================
+
+Method
+Wrist translated to origin.
+Palm-relative 3D coordinate system created using palm landmarks.
+Hand size normalized using maximum wrist distance.
+StandardScaler fitted within each training fold.
+RBF SVM with class_weight='balanced'.
+C=100, gamma=0.01.
+
+Fold Results
+held_out_member  train_samples  test_samples  accuracy  macro_precision  macro_recall  macro_f1  weighted_f1
+       Member_1           1287           500  0.664000         0.686149      0.674786  0.659109     0.648223
+       Member_2           1342           445  0.496629         0.333637      0.468833  0.368221     0.399178
+       Member_3           1428           359  0.317549         0.366282      0.368606  0.321438     0.294785
+       Member_4           1304           483  0.296066         0.261158      0.278377  0.238125     0.253746
+
+Overall Results
+accuracy: 0.453274
+macro_precision: 0.477396
+macro_recall: 0.455231
+macro_f1: 0.443689
+weighted_f1: 0.442089
+
+Four-Fold Average
+accuracy: 0.443561
+macro_precision: 0.411806
+macro_recall: 0.447651
+macro_f1: 0.396723
+weighted_f1: 0.398983
+
+Comparison With Previous Person-Independent Result
+Previous Accuracy: 0.389500
+New Accuracy: 0.453274
+Accuracy Change: 0.063774
+Previous Macro F1: 0.386400
+New Macro F1: 0.443689
+Macro F1 Change: 0.057289
