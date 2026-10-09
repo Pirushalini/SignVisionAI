@@ -1,6 +1,26 @@
-import os
-import re
+"""
+SignVisionAI - Member-wise 2-Hand Landmark Extraction
+
+Extracts up to two hands from each SLS dataset image.
+
+Feature order:
+    Left hand  = 63 features
+    Right hand = 63 features
+
+Total:
+    126 landmark features
+
+Missing hands are zero-padded.
+
+The member ID is inferred from the image number:
+    01-20 -> Member_1
+    21-40 -> Member_2
+    41-60 -> Member_3
+    61-80 -> Member_4
+"""
+
 import csv
+import re
 from pathlib import Path
 
 import cv2
@@ -10,9 +30,10 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 
-# =========================
+# ============================================================
 # Paths
-# =========================
+# ============================================================
+
 DATASET_DIR = Path("data/SLS_Dataset")
 MODEL_PATH = Path("notebooks/hand_landmarker.task")
 
@@ -23,30 +44,57 @@ OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
 FAILED_CSV.parent.mkdir(parents=True, exist_ok=True)
 
 
-# =========================
-# CSV columns
-# =========================
-feature_columns = []
+# ============================================================
+# Feature definitions
+# ============================================================
 
-for i in range(21):
-    feature_columns.extend([
-        f"lm{i}_x",
-        f"lm{i}_y",
-        f"lm{i}_z",
-    ])
+def make_hand_feature_columns(prefix):
+    columns = []
 
-output_columns = [
+    for i in range(21):
+        columns.extend([
+            f"{prefix}_lm{i}_x",
+            f"{prefix}_lm{i}_y",
+            f"{prefix}_lm{i}_z",
+        ])
+
+    return columns
+
+
+LEFT_FEATURE_COLUMNS = make_hand_feature_columns("left")
+RIGHT_FEATURE_COLUMNS = make_hand_feature_columns("right")
+
+FEATURE_COLUMNS = (
+    LEFT_FEATURE_COLUMNS
+    + RIGHT_FEATURE_COLUMNS
+)
+
+OUTPUT_COLUMNS = [
     "image_name",
     "member_id",
     "label",
-] + feature_columns
+] + FEATURE_COLUMNS
 
 
-# =========================
+# ============================================================
 # Member mapping
-# =========================
+# ============================================================
+
 def get_member_id(image_name):
-    match = re.search(r"_(\d+)\.(jpg|jpeg|png)$", image_name, re.IGNORECASE)
+    """
+    Determine member from image number.
+
+    01-20 -> Member_1
+    21-40 -> Member_2
+    41-60 -> Member_3
+    61-80 -> Member_4
+    """
+
+    match = re.search(
+        r"_(\d+)\.(jpg|jpeg|png)$",
+        image_name,
+        re.IGNORECASE
+    )
 
     if not match:
         return None
@@ -55,60 +103,138 @@ def get_member_id(image_name):
 
     if 1 <= number <= 20:
         return "Member_1"
-    elif 21 <= number <= 40:
+
+    if 21 <= number <= 40:
         return "Member_2"
-    elif 41 <= number <= 60:
+
+    if 41 <= number <= 60:
         return "Member_3"
-    elif 61 <= number <= 80:
+
+    if 61 <= number <= 80:
         return "Member_4"
 
     return None
 
 
-# =========================
-# Get already processed files
-# =========================
-processed_images = set()
+# ============================================================
+# Feature helpers
+# ============================================================
 
-if OUTPUT_CSV.exists():
-    try:
-        with open(OUTPUT_CSV, "r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get("image_name"):
-                    processed_images.add(row["image_name"])
-    except Exception as e:
-        print(f"Warning: Could not read existing output CSV: {e}")
+def enhance_contrast_for_detection(image_bgr):
+    """Create a contrast-enhanced copy without modifying the source image."""
+    lab = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
+    l_channel, a_channel, b_channel = cv2.split(lab)
 
-print(f"Already processed: {len(processed_images)} images")
+    clahe = cv2.createCLAHE(
+        clipLimit=2.0,
+        tileGridSize=(8, 8)
+    )
 
+    enhanced_l = clahe.apply(l_channel)
+    enhanced_lab = cv2.merge(
+        (enhanced_l, a_channel, b_channel)
+    )
 
-# =========================
-# CSV initialization
-# =========================
-if not OUTPUT_CSV.exists() or OUTPUT_CSV.stat().st_size == 0:
-    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(output_columns)
+    return cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
 
 
-if not FAILED_CSV.exists() or FAILED_CSV.stat().st_size == 0:
-    with open(FAILED_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "image_name",
-            "member_id",
-            "label",
-            "reason",
+def landmarks_to_features(landmarks):
+    """
+    Convert one MediaPipe hand into 63 x/y/z values.
+    """
+
+    features = []
+
+    for landmark in landmarks:
+        features.extend([
+            landmark.x,
+            landmark.y,
+            landmark.z,
         ])
 
+    if len(features) != 63:
+        raise ValueError(
+            f"Expected 63 hand features, got {len(features)}"
+        )
 
-# =========================
+    return features
+
+
+def zero_hand_features():
+    """
+    Return 63 zero values for a missing hand.
+    """
+
+    return [0.0] * 63
+
+
+def get_ordered_hand_features(result):
+    """
+    Return:
+
+        left_features + right_features
+
+    Always exactly 126 values.
+
+    Missing hands are zero-padded.
+    """
+
+    left_features = None
+    right_features = None
+
+    if not result.hand_landmarks:
+        return (
+            zero_hand_features(),
+            zero_hand_features(),
+        )
+
+    for index, landmarks in enumerate(
+        result.hand_landmarks
+    ):
+
+        handedness = result.handedness[index]
+
+        if not handedness:
+            continue
+
+        hand_label = (
+            handedness[0]
+            .category_name
+            .lower()
+        )
+
+        features = landmarks_to_features(
+            landmarks
+        )
+
+        if hand_label == "left":
+            left_features = features
+
+        elif hand_label == "right":
+            right_features = features
+
+    if left_features is None:
+        left_features = zero_hand_features()
+
+    if right_features is None:
+        right_features = zero_hand_features()
+
+    return (
+        left_features,
+        right_features,
+    )
+
+
+# ============================================================
 # Collect images
-# =========================
+# ============================================================
+
 image_files = []
 
-for letter_dir in sorted(DATASET_DIR.iterdir()):
+for letter_dir in sorted(
+    DATASET_DIR.iterdir()
+):
+
     if not letter_dir.is_dir():
         continue
 
@@ -117,20 +243,47 @@ for letter_dir in sorted(DATASET_DIR.iterdir()):
     if not ("A" <= label <= "Z"):
         continue
 
-    for image_path in sorted(letter_dir.iterdir()):
-        if image_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
-            image_files.append((image_path, label))
+    for image_path in sorted(
+        letter_dir.iterdir()
+    ):
+
+        if image_path.suffix.lower() in [
+            ".jpg",
+            ".jpeg",
+            ".png",
+        ]:
+            image_files.append(
+                (image_path, label)
+            )
 
 
-total = len(image_files)
+print("=" * 70)
+print("SignVisionAI - Member-wise 2-Hand Landmark Extraction")
+print("=" * 70)
 
-print(f"Total images found: {total}")
-print("Starting MediaPipe landmark extraction...")
+print(
+    f"Dataset directory : {DATASET_DIR}"
+)
+
+print(
+    f"Total images       : {len(image_files)}"
+)
+
+print(
+    f"Feature count      : {len(FEATURE_COLUMNS)}"
+)
+
+print(
+    "Expected           : 126"
+)
+
+print()
 
 
-# =========================
+# ============================================================
 # MediaPipe setup
-# =========================
+# ============================================================
+
 base_options = python.BaseOptions(
     model_asset_path=str(MODEL_PATH)
 )
@@ -138,157 +291,29 @@ base_options = python.BaseOptions(
 options = vision.HandLandmarkerOptions(
     base_options=base_options,
     running_mode=vision.RunningMode.IMAGE,
-    num_hands=1,
-    min_hand_detection_confidence=0.5,
-    min_hand_presence_confidence=0.5,
-    min_tracking_confidence=0.5,
+    num_hands=2,
+    min_hand_detection_confidence=0.3,
+    min_hand_presence_confidence=0.3,
+    min_tracking_confidence=0.3,
 )
 
-landmarker = vision.HandLandmarker.create_from_options(options)
+landmarker = (
+    vision.HandLandmarker
+    .create_from_options(options)
+)
 
 
-# =========================
-# Processing
-# =========================
-successful = len(processed_images)
+# ============================================================
+# Statistics
+# ============================================================
+
+successful = 0
 failed = 0
 
-# Load failed image names so resume does not repeat them
-failed_images = set()
+one_hand = 0
+two_hands = 0
+zero_hands = 0
 
-if FAILED_CSV.exists():
-    try:
-        with open(FAILED_CSV, "r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get("image_name"):
-                    failed_images.add(row["image_name"])
-    except Exception:
-        pass
-
-
-with open(OUTPUT_CSV, "a", newline="", encoding="utf-8") as output_file, \
-     open(FAILED_CSV, "a", newline="", encoding="utf-8") as failed_file:
-
-    output_writer = csv.writer(output_file)
-    failed_writer = csv.writer(failed_file)
-
-    try:
-        for index, (image_path, label) in enumerate(image_files, start=1):
-
-            image_name = image_path.name
-
-            # Skip already completed images
-            if image_name in processed_images:
-                continue
-
-            member_id = get_member_id(image_name)
-
-            if member_id is None:
-                failed_writer.writerow([
-                    image_name,
-                    "",
-                    label,
-                    "Could not determine member ID",
-                ])
-                failed_file.flush()
-                failed += 1
-                continue
-
-            try:
-                image = cv2.imread(str(image_path))
-
-                if image is None:
-                    failed_writer.writerow([
-                        image_name,
-                        member_id,
-                        label,
-                        "Could not read image",
-                    ])
-                    failed_file.flush()
-                    failed += 1
-                    continue
-
-                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-                mp_image = mp.Image(
-                    image_format=mp.ImageFormat.SRGB,
-                    data=rgb_image,
-                )
-
-                result = landmarker.detect(mp_image)
-
-                if not result.hand_landmarks:
-                    failed_writer.writerow([
-                        image_name,
-                        member_id,
-                        label,
-                        "No hand detected",
-                    ])
-                    failed_file.flush()
-                    failed += 1
-                    continue
-
-                landmarks = result.hand_landmarks[0]
-
-                row = [
-                    image_name,
-                    member_id,
-                    label,
-                ]
-
-                for lm in landmarks:
-                    row.extend([
-                        lm.x,
-                        lm.y,
-                        lm.z,
-                    ])
-
-                output_writer.writerow(row)
-                output_file.flush()
-
-                processed_images.add(image_name)
-                successful += 1
-
-            except Exception as e:
-                failed_writer.writerow([
-                    image_name,
-                    member_id,
-                    label,
-                    str(e),
-                ])
-                failed_file.flush()
-                failed += 1
-
-            # Progress
-            if index % 50 == 0 or index == total:
-                print(
-                    f"Progress: {index}/{total} | "
-                    f"Successful: {successful} | "
-                    f"Failed: {failed}"
-                )
-
-    except KeyboardInterrupt:
-        print("\nExtraction interrupted by user.")
-        print("Already processed results are safely saved.")
-        print("Run the same command again to resume.")
-
-    finally:
-        landmarker.close()
-
-
-# =========================
-# Final summary
-# =========================
-print("\n========================================")
-print("Member-wise landmark extraction complete")
-print("========================================")
-print(f"Successful samples: {successful}")
-print(f"Failed samples: {failed}")
-print(f"Output CSV: {OUTPUT_CSV}")
-print(f"Failed images: {FAILED_CSV}")
-
-# Member counts
 member_counts = {
     "Member_1": 0,
     "Member_2": 0,
@@ -296,14 +321,309 @@ member_counts = {
     "Member_4": 0,
 }
 
-if OUTPUT_CSV.exists():
-    with open(OUTPUT_CSV, "r", newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            member = row.get("member_id")
-            if member in member_counts:
-                member_counts[member] += 1
 
-print("\nMember-wise successful samples:")
+# ============================================================
+# Fresh output files
+# ============================================================
+
+with open(
+    OUTPUT_CSV,
+    "w",
+    newline="",
+    encoding="utf-8"
+) as output_file, open(
+    FAILED_CSV,
+    "w",
+    newline="",
+    encoding="utf-8"
+) as failed_file:
+
+    writer = csv.writer(output_file)
+
+    failed_writer = csv.writer(
+        failed_file
+    )
+
+    writer.writerow(
+        OUTPUT_COLUMNS
+    )
+
+    failed_writer.writerow([
+        "image_name",
+        "member_id",
+        "label",
+        "reason",
+    ])
+
+
+    # ========================================================
+    # Process images
+    # ========================================================
+
+    for counter, (
+        image_path,
+        label
+    ) in enumerate(
+        image_files,
+        start=1
+    ):
+
+        image_name = image_path.name
+
+        member_id = get_member_id(
+            image_name
+        )
+
+        if member_id is None:
+
+            failed += 1
+
+            failed_writer.writerow([
+                image_name,
+                "",
+                label,
+                "Could not determine member ID",
+            ])
+
+            continue
+
+
+        # ----------------------------------------------------
+        # Read image
+        # ----------------------------------------------------
+
+        image = cv2.imread(
+            str(image_path)
+        )
+
+        if image is None:
+
+            failed += 1
+
+            failed_writer.writerow([
+                image_name,
+                member_id,
+                label,
+                "Could not read image",
+            ])
+
+            continue
+
+
+        # ----------------------------------------------------
+        # MediaPipe detection with fallback retry
+        # ----------------------------------------------------
+
+        try:
+
+            # First attempt: original image
+            rgb_image = cv2.cvtColor(
+                image,
+                cv2.COLOR_BGR2RGB
+            )
+
+            mp_image = mp.Image(
+                image_format=mp.ImageFormat.SRGB,
+                data=rgb_image
+            )
+
+            result = landmarker.detect(mp_image)
+            detection_method = "original"
+
+            # Second attempt: retry with enhanced contrast if no hands detected
+            if len(result.hand_landmarks) == 0:
+                enhanced_bgr = enhance_contrast_for_detection(image)
+                enhanced_rgb = cv2.cvtColor(
+                    enhanced_bgr,
+                    cv2.COLOR_BGR2RGB
+                )
+
+                enhanced_mp_image = mp.Image(
+                    image_format=mp.ImageFormat.SRGB,
+                    data=enhanced_rgb
+                )
+
+                retry_result = landmarker.detect(enhanced_mp_image)
+
+                if len(retry_result.hand_landmarks) > 0:
+                    result = retry_result
+                    detection_method = "enhanced_retry"
+                else:
+                    detection_method = "none"
+
+        except Exception as e:
+
+            failed += 1
+
+            failed_writer.writerow([
+                image_name,
+                member_id,
+                label,
+                f"MediaPipe error: {e}",
+            ])
+
+            continue
+
+
+        # ----------------------------------------------------
+        # Count detected hands
+        # ----------------------------------------------------
+
+        detected_hands = len(
+            result.hand_landmarks
+        )
+
+
+        if detected_hands == 0:
+
+            zero_hands += 1
+
+        elif detected_hands == 1:
+
+            one_hand += 1
+
+        else:
+
+            two_hands += 1
+
+
+        # ----------------------------------------------------
+        # Get ordered 126 features
+        # ----------------------------------------------------
+
+        try:
+
+            left_features, right_features = (
+                get_ordered_hand_features(
+                    result
+                )
+            )
+
+        except Exception as e:
+
+            failed += 1
+
+            failed_writer.writerow([
+                image_name,
+                member_id,
+                label,
+                f"Feature extraction error: {e}",
+            ])
+
+            continue
+
+
+        features = (
+            left_features
+            + right_features
+        )
+
+
+        # ----------------------------------------------------
+        # Validate
+        # ----------------------------------------------------
+
+        if len(features) != 126:
+
+            failed += 1
+
+            failed_writer.writerow([
+                image_name,
+                member_id,
+                label,
+                (
+                    "Invalid feature count: "
+                    f"{len(features)}"
+                ),
+            ])
+
+            continue
+
+
+        # ----------------------------------------------------
+        # Write row
+        # ----------------------------------------------------
+
+        writer.writerow([
+            image_name,
+            member_id,
+            label,
+        ] + features)
+
+        successful += 1
+
+        member_counts[member_id] += 1
+
+
+        # ----------------------------------------------------
+        # Progress
+        # ----------------------------------------------------
+
+        if (
+            counter % 100 == 0
+            or counter == len(image_files)
+        ):
+
+            print(
+                f"[{counter}/{len(image_files)}] "
+                f"Processed: {successful} | "
+                f"Failed: {failed}"
+            )
+
+
+# ============================================================
+# Cleanup
+# ============================================================
+
+landmarker.close()
+
+
+# ============================================================
+# Summary
+# ============================================================
+
+print()
+print("=" * 70)
+print("Extraction completed.")
+print("=" * 70)
+
+print(
+    f"Successful samples : {successful}"
+)
+
+print(
+    f"Failed samples     : {failed}"
+)
+
+print(
+    f"Zero hands         : {zero_hands}"
+)
+
+print(
+    f"One hand           : {one_hand}"
+)
+
+print(
+    f"Two hands          : {two_hands}"
+)
+
+print()
+print("Samples by member:")
+
 for member, count in member_counts.items():
-    print(f"{member}: {count}")
+
+    print(
+        f"  {member}: {count}"
+    )
+
+print()
+print(
+    f"Saved dataset: {OUTPUT_CSV}"
+)
+
+print(
+    f"Saved failures: {FAILED_CSV}"
+)
+
+print()
+print("=" * 70)

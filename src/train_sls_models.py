@@ -92,7 +92,16 @@ def load_and_validate_dataset(data_path):
     and handles missing/invalid values without modifying the original file.
     
     Expected Landmark Format:
-        Features: lm0_x, lm0_y, lm0_z, ... , lm20_x, lm20_y, lm20_z (63 columns)
+        Features:
+            Left hand:
+                left_lm0_x, left_lm0_y, left_lm0_z, ...
+                left_lm20_x, left_lm20_y, left_lm20_z
+
+            Right hand:
+                right_lm0_x, right_lm0_y, right_lm0_z, ...
+                right_lm20_x, right_lm20_y, right_lm20_z
+
+        Total: 126 landmark features
         Target: label (A-Z classes)
     """
     print(f"\n[1/7] Loading dataset from: {data_path}")
@@ -130,9 +139,23 @@ def load_and_validate_dataset(data_path):
     y = df[target_col].copy()
 
     # Verify feature columns
-    # Expected 63 landmark coordinates (21 landmarks x 3: x, y, z)
+    #
+    # Expected representation:
+    #   Left hand  = 21 landmarks x 3 = 63 features
+    #   Right hand = 21 landmarks x 3 = 63 features
+    #   Total      = 126 features
+
+    EXPECTED_FEATURE_COUNT = 126
+
     print(f" -> Number of landmark feature dimensions: {X.shape[1]}")
+    print(f" -> Expected feature dimensions: {EXPECTED_FEATURE_COUNT}")
     print(f" -> Number of unique sign classes: {y.nunique()}")
+
+    if X.shape[1] != EXPECTED_FEATURE_COUNT:
+        raise ValueError(
+            f"Expected {EXPECTED_FEATURE_COUNT} landmark features "
+            f"for two-hand SLS recognition, but found {X.shape[1]}."
+        )
     
     # Check and handle missing/invalid values
     missing_features = X.isnull().sum().sum()
@@ -224,8 +247,7 @@ def build_model_definitions():
         ('scaler', StandardScaler()),
         ('classifier', MLPClassifier(
             max_iter=500,
-            early_stopping=True,
-            n_iter_no_change=15,
+            early_stopping=False,
             random_state=RANDOM_STATE
         ))
     ])
