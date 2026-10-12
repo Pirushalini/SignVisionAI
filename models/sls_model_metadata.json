@@ -29,15 +29,15 @@
         "Z"
     ],
     "num_classes": 26,
-    "feature_count": 63,
-    "best_hyperparameters": "{'classifier__C': 50.0, 'classifier__gamma': 'scale', 'classifier__kernel': 'rbf'}",
+    "feature_count": 126,
+    "best_hyperparameters": "{'classifier__C': 50.0, 'classifier__gamma': 0.01, 'classifier__kernel': 'rbf'}",
     "test_metrics": {
-        "accuracy": 0.9581005586592178,
-        "macro_precision": 0.9584544094338093,
-        "macro_recall": 0.954174297924298,
-        "macro_f1": 0.954087518955506,
-        "weighted_f1": 0.9567576251702047,
-        "cv_macro_f1": 0.9591795561727252
+        "accuracy": 0.9610027855153204,
+        "macro_precision": 0.9638291855203621,
+        "macro_recall": 0.9614730888769352,
+        "macro_f1": 0.9610181781617613,
+        "weighted_f1": 0.9604433049297835,
+        "cv_macro_f1": 0.9642625987942635
     },
     "pipeline_steps": [
         "scaler",
