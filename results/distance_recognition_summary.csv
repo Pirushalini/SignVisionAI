@@ -1,0 +1,9 @@
+Experiment,k,Representation,Threshold,Total Queries,Accepted,Uncertain,Rejection Rate (%),Overall Accuracy (%),Accepted Accuracy (%),Mean NN Distance
+"1-NN (k=1, Baseline 126, No Rejection)",1,Baseline (126),None,158,158,0,0.0,96.2,96.2,0.62645
+"KNN (k=3, Baseline 126, No Rejection)",3,Baseline (126),None,158,158,0,0.0,96.2,96.2,0.62645
+"KNN (k=5, Baseline 126, No Rejection)",5,Baseline (126),None,158,158,0,0.0,92.41,92.41,0.62645
+"KNN (k=3, Baseline 126, 95% Threshold)",3,Baseline (126),95%,158,150,8,5.06,93.67,98.67,0.62645
+"KNN (k=3, Baseline 126, 99% Threshold)",3,Baseline (126),99%,158,154,4,2.53,94.94,97.4,0.62645
+"1-NN (k=1, Augmented 129, No Rejection)",1,Augmented (129),None,158,158,0,0.0,96.84,96.84,0.6427
+"KNN (k=3, Augmented 129, No Rejection)",3,Augmented (129),None,158,158,0,0.0,96.2,96.2,0.6427
+"KNN (k=5, Augmented 129, No Rejection)",5,Augmented (129),None,158,158,0,0.0,93.04,93.04,0.6427
