@@ -1,0 +1,6 @@
+# SignVisionAI - Part 2: Landmark Extraction + Normalization
+# Core runtime dependencies tested on Python 3.12+ (Windows)
+mediapipe>=1.0.1
+opencv-python>=4.8.0
+numpy>=1.24.0
+pandas>=2.0.0
