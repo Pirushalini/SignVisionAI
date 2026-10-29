@@ -124,18 +124,7 @@ python -m pytest tests/test_confidence_estimator.py -v
 
 Tests cover score ordering, margins, all four recognition states, invalid inputs, temporal stability, timer/history resets, and the probability conversion helper. This result verifies the isolated logic; it does **not** establish real-world recognition accuracy or successful GUI integration.
 
-## Current limitations and validation needed
 
-The default distance and margin thresholds are **provisional**. They have not yet been tuned or evaluated against real, held-out gesture predictions.
-
-Before claiming improved field accuracy, evaluate on labeled data not used to build the reference templates or train the classifier:
-
-- **Accepted-prediction precision:** Among accepted strong matches, how many are correct?
-- **False strong accepts:** How often is an incorrect class accepted as strong?
-- **Coverage:** What fraction of usable inputs qualify as strong matches?
-- **Latency:** How long does it take to obtain a stable accepted prediction?
-
-Static labeled images can support testing of distance and margin rules after extracting features and generating per-class scores. **Temporal stability and latency** require ordered frame sequences or recorded video. A webcam on the developer's machine is not required when suitable saved data is available.
 
 ## Integration handover checklist
 
