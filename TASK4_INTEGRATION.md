@@ -137,6 +137,3 @@ Tests cover score ordering, margins, all four recognition states, invalid inputs
 - [ ] Validate the default thresholds with held-out real data and test temporal behavior with sequences.
 - [ ] Confirm compatibility with the final application and recognition model.
 
-## Branch / ownership
-
-Task 4 is provided on **`feature/nimasha-confidence-estimation`** for integration by the team. **This guide does not imply that the feature has been merged into `main` or that end-to-end integration has been completed.**
